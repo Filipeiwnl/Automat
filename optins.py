@@ -8,7 +8,7 @@ from datetime import datetime
 from openpyxl.styles import PatternFill
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 
-#### Function para validar Token ####
+#### TOKEN VALIDATION ####
 def get_csrf_token(session, url):
     response = session.get(url)
     if response.status_code == 200:
@@ -18,6 +18,7 @@ def get_csrf_token(session, url):
     else:
         raise Exception(f"Failed to get CSRF token. Status code: {response.status_code}")
 
+#### DATA OF THE PROBLEMS EXTRACTION ####
 def extract_span_info(info_str):
     info_dict = {}
     matches = re.findall(r'(\w+):([^\n]+)', info_str)
@@ -26,6 +27,7 @@ def extract_span_info(info_str):
         info_dict[key.strip()] = value.strip()
     return info_dict
 
+#### DATA OF THE PROBLEMS TRATMENT #### 
 def trat_niveis(info_str):
     falhas = ['S/ GER', 'S/ PLC', 'LOS', 'S/ IP']
     matches = re.findall(r'(\w+):([^\n]+)', info_str)
@@ -45,13 +47,13 @@ def safe_float_conversion(value):
     except ValueError:
         return 0.0
 
-def consultar_dados(session, base_url, designador):
-    consulta_url = f"{base_url}/dados_enlace/{designador}"
-    print(f"Consultando URL: {consulta_url}")
+def data_consult(session, base_url, designador):
+    consult_url = f"{base_url}/dados_enlace/{designador}"
+    print(f"Consulting URL: {consult_url}")
 
-    response = session.get(consulta_url)
+    response = session.get(consult_url)
     if response.status_code != 200:
-        print(f"Falha na consulta. Status code: {response.status_code}")
+        print(f"Faile Query. Status code: {response.status_code}")
         return None
     
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -64,7 +66,7 @@ def consultar_dados(session, base_url, designador):
         ponta_a = ponta_b = 'N/A'
     print(f"Ponta A: {ponta_a}, Ponta B: {ponta_b}")
     
-    csrf_token = get_csrf_token(session, consulta_url)
+    csrf_token = get_csrf_token(session, consult_url)
 
     data = {
         'id_ots': designador,
@@ -73,7 +75,7 @@ def consultar_dados(session, base_url, designador):
     }
 
     headers = {
-        'Referer': consulta_url
+        'Referer': consult_url
     }
 
     response = session.post(f"{base_url}/ajax_span", data=data, headers=headers)
@@ -100,7 +102,7 @@ def consultar_dados(session, base_url, designador):
         else:
             db_km_a = db_km_b = 'N/A'
 
-        dados = {
+        Information = {
             'TX A': link_a_info.get('TX', 'N/A'),
             'RX A': link_a_info.get('RX', 'N/A'),
             'Span atual A': link_a_info.get('SPAN', 'N/A'),
@@ -122,16 +124,16 @@ def consultar_dados(session, base_url, designador):
             'DB/KM B': db_km_b
         }
         
-        print("Dados extraídos:", dados)
+        print("Information extraídos:", Information)
         
-        return dados, consulta_url  # Retorna os dados e a URL de consulta
+        return Information, consult_url  # Retorna os Information e a URL de consulta
     else:
         print(f"Falha na consulta. Status code: {response.status_code}")
-        return None, consulta_url  # Retorna None e a URL de consulta em caso de falha
+        return None, consult_url  # Retorna None e a URL de consulta em caso de falha
 
 def is_numeric(value):
     """
-    Verifica se o valor é numérico.
+    Checks if a value is numeric
     """
     try:
         float(value)
@@ -139,7 +141,8 @@ def is_numeric(value):
     except ValueError:
         return False
 
-def atualizar_planilha(df_input, session, base_url, designadores=None, novos_dados=False):
+#### Update Sheet ####
+def atualizar_planilha(df_input, session, base_url, designadores=None, novos_Information=False):
     num_rows = len(df_input)
     atualizados = []
 
@@ -151,49 +154,49 @@ def atualizar_planilha(df_input, session, base_url, designadores=None, novos_dad
             if designador not in designadores:
                 continue
         
-        if novos_dados and pd.notna(row['Equipamento de Envio (A)']) and str(row['Equipamento de Envio (A)']).strip() != '':
+        if novos_Information and pd.notna(row['Equipamento de Envio (A)']) and str(row['Equipamento de Envio (A)']).strip() != '':
             print(f"Linha {index + 1} já tem um resultado, pulando a consulta.")
             continue
 
         
         if pd.notna(designador) and str(designador).strip() != '':
-            dados_extraidos, consulta_url = consultar_dados(session, base_url, designador)
-            if dados_extraidos is not None:
-                df_input.at[index, 'TX A'] = str(dados_extraidos['TX A'])
-                df_input.at[index, 'RX A'] = str(dados_extraidos['RX A'])
-                df_input.at[index, 'Span atual A'] = str(dados_extraidos['Span atual A'])
-                df_input.at[index, 'Span projetado A'] = str(dados_extraidos['Span projetado A'])
-                df_input.at[index, 'Histórico A'] = str(dados_extraidos['Histórico A'])
-                df_input.at[index, 'Equipamento de Envio (A)'] = str(dados_extraidos['Ponta A'])
-                df_input.at[index, 'TX B'] = str(dados_extraidos['TX B'])
-                df_input.at[index, 'RX B'] = str(dados_extraidos['RX B'])
-                df_input.at[index, 'Span atual B'] = str(dados_extraidos['Span atual B'])
-                df_input.at[index, 'Span projetado B'] = str(dados_extraidos['Span projetado B'])
-                df_input.at[index, 'Histórico B'] = str(dados_extraidos['Histórico B'])
-                df_input.at[index, 'Equipamento de Recepção (B)'] = str(dados_extraidos['Ponta B'])
-                df_input.at[index, 'KM: A <> B'] = str(dados_extraidos['KM: A <> B'])
-                df_input.at[index, 'Status A'] = str(dados_extraidos['Status A'])
-                df_input.at[index, 'Status B'] = str(dados_extraidos['Status B'])
-                df_input.at[index, 'Trat Niveis A'] = str(dados_extraidos['Trat Niveis A'])
-                df_input.at[index, 'Trat Niveis B'] = str(dados_extraidos['Trat Niveis B'])
-                df_input.at[index, 'DB/KM A'] = str(dados_extraidos['DB/KM A'])
-                df_input.at[index, 'DB/KM B'] = str(dados_extraidos['DB/KM B'])
+            Information_extraidos, consult_url = data_consult(session, base_url, designador)
+            if Information_extraidos is not None:
+                df_input.at[index, 'TX A'] = str(Information_extraidos['TX A'])
+                df_input.at[index, 'RX A'] = str(Information_extraidos['RX A'])
+                df_input.at[index, 'Span atual A'] = str(Information_extraidos['Span atual A'])
+                df_input.at[index, 'Span projetado A'] = str(Information_extraidos['Span projetado A'])
+                df_input.at[index, 'Histórico A'] = str(Information_extraidos['Histórico A'])
+                df_input.at[index, 'Equipamento de Envio (A)'] = str(Information_extraidos['Ponta A'])
+                df_input.at[index, 'TX B'] = str(Information_extraidos['TX B'])
+                df_input.at[index, 'RX B'] = str(Information_extraidos['RX B'])
+                df_input.at[index, 'Span atual B'] = str(Information_extraidos['Span atual B'])
+                df_input.at[index, 'Span projetado B'] = str(Information_extraidos['Span projetado B'])
+                df_input.at[index, 'Histórico B'] = str(Information_extraidos['Histórico B'])
+                df_input.at[index, 'Equipamento de Recepção (B)'] = str(Information_extraidos['Ponta B'])
+                df_input.at[index, 'KM: A <> B'] = str(Information_extraidos['KM: A <> B'])
+                df_input.at[index, 'Status A'] = str(Information_extraidos['Status A'])
+                df_input.at[index, 'Status B'] = str(Information_extraidos['Status B'])
+                df_input.at[index, 'Trat Niveis A'] = str(Information_extraidos['Trat Niveis A'])
+                df_input.at[index, 'Trat Niveis B'] = str(Information_extraidos['Trat Niveis B'])
+                df_input.at[index, 'DB/KM A'] = str(Information_extraidos['DB/KM A'])
+                df_input.at[index, 'DB/KM B'] = str(Information_extraidos['DB/KM B'])
                 
                 
-                # Adiciona avisos ou "OK" na coluna AVISOS
+                # Add "OK" to "AVISOS" if there are no issues
                 avisos = []
                 
-                # Verificar cada coluna e adicionar avisos se necessário
-                if not is_numeric(dados_extraidos['RX A']):
-                    avisos.append(f"{dados_extraidos['RX A']}")
-                if not is_numeric(dados_extraidos['RX B']):
-                    avisos.append(f"{dados_extraidos['RX B']}")
-                if not is_numeric(dados_extraidos['Span atual A']):
-                    avisos.append(f"{dados_extraidos['Span atual A']}")
-                if not is_numeric(dados_extraidos['Span atual B']):
-                    avisos.append(f"{dados_extraidos['Span atual B']}")
+                # check the column, if you have a problem, add the error code
+                if not is_numeric(Information_extraidos['RX A']):
+                    avisos.append(f"{Information_extraidos['RX A']}")
+                if not is_numeric(Information_extraidos['RX B']):
+                    avisos.append(f"{Information_extraidos['RX B']}")
+                if not is_numeric(Information_extraidos['Span atual A']):
+                    avisos.append(f"{Information_extraidos['Span atual A']}")
+                if not is_numeric(Information_extraidos['Span atual B']):
+                    avisos.append(f"{Information_extraidos['Span atual B']}")
 
-                # Adicionar "OK" se não houver avisos, ou apenas as mensagens de aviso
+                # Add "OK" to "AVISOS" if there are no issues
                 if not avisos:
                     df_input.at[index, 'AVISOS'] = 'OK'
                 else:
@@ -234,18 +237,18 @@ def main():
     print(f"Total de linhas no DataFrame: {len(df_input)}")
     
 
-    opcao = input("Escolha a ação:\n1. Atualizar dados específicos\n2. Atualizar toda a planilha\n3. Atualizar apenas novos dados\nDigite o número da opção desejada: ")
+    option = input("Escolha a ação:\n1. Atualizar Information específicos\n2. Atualizar toda a planilha\n3. Atualizar apenas novos Information\nDigite o número da opção desejada: ")
 
-    if opcao == '1':
+    if option == '1':
         print("Designadores disponíveis para atualização:")
         print(df_input['OTS'].tolist())
         designadores = input("Digite os designadores (OTS) a serem atualizados, separados por vírgula: ").split(',')
         designadores = [d.strip() for d in designadores]
         df_input, atualizados = atualizar_planilha(df_input, session, base_url, designadores=designadores)
-    elif opcao == '2':
+    elif option == '2':
         df_input, atualizados = atualizar_planilha(df_input, session, base_url)
-    elif opcao == '3':
-        df_input, atualizados = atualizar_planilha(df_input, session, base_url, novos_dados=True)
+    elif option == '3':
+        df_input, atualizados = atualizar_planilha(df_input, session, base_url, novos_Information=True)
     else:
         print("Opção inválida. Saindo do programa.")
         return
@@ -258,7 +261,7 @@ def main():
     sheet_name = book.sheetnames[0]
     sheet = book[sheet_name]
     
-    # Limpa as células para evitar sobreposição de dados antigos com os novos
+    # Clear all cells in the sheet so there are no overwrite errors
     for row in sheet.iter_rows(min_row=2, max_row=sheet.max_row, min_col=1, max_col=sheet.max_column):
         for cell in row:
             cell.value = None
