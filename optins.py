@@ -53,7 +53,7 @@ def data_consult(session, base_url, designador):
 
     response = session.get(consult_url)
     if response.status_code != 200:
-        print(f"Faile Query. Status code: {response.status_code}")
+        print(f"Failed Query for URL {consult_url}. Status code: {response.status_code}")
         return None
     
     soup = BeautifulSoup(response.content, 'html.parser')
@@ -128,8 +128,8 @@ def data_consult(session, base_url, designador):
         
         return Information, consult_url  # Retorna os Information e a URL de consulta
     else:
-        print(f"Falha na consulta. Status code: {response.status_code}")
-        return None, consult_url  # Retorna None e a URL de consulta em caso de falha
+        print(f"Failed to retrieve data. Status code: {response.status_code}")
+        return None  # Retorna None em caso de falha
 
 def is_numeric(value):
     """
@@ -158,10 +158,10 @@ def atualizar_planilha(df_input, session, base_url, designadores=None, novos_Inf
             print(f"Linha {index + 1} já tem um resultado, pulando a consulta.")
             continue
 
-        
         if pd.notna(designador) and str(designador).strip() != '':
-            Information_extraidos, consult_url = data_consult(session, base_url, designador)
-            if Information_extraidos is not None:
+            result = data_consult(session, base_url, designador)
+            if result:
+                Information_extraidos, consult_url = result
                 df_input.at[index, 'TX A'] = str(Information_extraidos['TX A'])
                 df_input.at[index, 'RX A'] = str(Information_extraidos['RX A'])
                 df_input.at[index, 'Span atual A'] = str(Information_extraidos['Span atual A'])
@@ -182,11 +182,9 @@ def atualizar_planilha(df_input, session, base_url, designadores=None, novos_Inf
                 df_input.at[index, 'DB/KM A'] = str(Information_extraidos['DB/KM A'])
                 df_input.at[index, 'DB/KM B'] = str(Information_extraidos['DB/KM B'])
                 
-                
                 # Add "OK" to "AVISOS" if there are no issues
                 avisos = []
                 
-                # check the column, if you have a problem, add the error code
                 if not is_numeric(Information_extraidos['RX A']):
                     avisos.append(f"{Information_extraidos['RX A']}")
                 if not is_numeric(Information_extraidos['RX B']):
@@ -196,14 +194,15 @@ def atualizar_planilha(df_input, session, base_url, designadores=None, novos_Inf
                 if not is_numeric(Information_extraidos['Span atual B']):
                     avisos.append(f"{Information_extraidos['Span atual B']}")
 
-                # Add "OK" to "AVISOS" if there are no issues
                 if not avisos:
                     df_input.at[index, 'AVISOS'] = 'OK'
                 else:
                     df_input.at[index, 'AVISOS'] = ', '.join(avisos)
 
                 atualizados.append(index)
-
+            else:
+                print(f"Failed to retrieve data for designador {designador}.")
+    
     return df_input, atualizados
 
 def main():
