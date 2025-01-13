@@ -127,7 +127,7 @@ def consultar_dados(session, base_url, designador):
         return None
 
 def main():
-    base_url = 'http://10.26.35.158:8000'
+    base_url = '//IP'
     session = requests.Session()
     
     file_path = os.path.join('Planilhas', 'OTSS.xlsx')

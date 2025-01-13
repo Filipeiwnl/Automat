@@ -206,7 +206,7 @@ def atualizar_planilha(df_input, session, base_url, designadores=None, novos_Inf
     return df_input, atualizados
 
 def main():
-    base_url = 'http://10.26.35.158:8000'
+    base_url = '//IP'
     session = requests.Session()
     
     file_path = os.path.join('Planilhas', 'OTSS.xlsx')
