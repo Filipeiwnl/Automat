@@ -7,8 +7,41 @@ All rights reserved.
 This software is owned by the author mentioned above and is protected by copyright laws. Unauthorized distribution, modification, or use of this software is strictly prohibited without express written permission from the author.
 
 # About
+Automated Site Testing (HL5D, HL5G, Flat, and Others)
 
-Autoamt of process for // are of Telefonica Brasil S.A
+This project was developed to perform automated tests on websites using technologies such as HL5D, HL5G, Flat, among others. After running the tests, all data is organized into a spreadsheet to facilitate analysis and tracking.
+
+## Features
+
+Test Execution: Conducts specific tests on different types of websites and technologies.
+
+Data Export: Generates spreadsheets with all results organized.
+
+Automated Calculations:
+
+Calculation of dB per km.
+
+Verification of loss status.
+
+User-Friendly Interface: Simplicity in usage and test configuration.
+
+How It Works
+
+Configure the test parameters, such as the type of site (HL5D, HL5G, Flat, etc.).
+
+Execute the tests automatically.
+
+The system generates a spreadsheet containing:
+
+Test results.
+
+Performance analysis.
+
+Loss status and dB per km calculations.
+
+
+
+
 
 # Description
 
