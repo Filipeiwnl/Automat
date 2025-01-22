@@ -9,7 +9,7 @@ This software is owned by the author mentioned above and is protected by copyrig
 # About
 Automated Site Testing (HL5D, HL5G, Flat, and Others)
 
-This project was developed to perform automated tests on websites using technologies such as HL5D, HL5G, Flat, among others. After running the tests, all data is organized into a spreadsheet to facilitate analysis and tracking.
+This project was developed to perform automated tests on sites using technologies such as HL5D, HL5G, Flat, among others. After running the tests, all data is organized into a spreadsheet to facilitate analysis and tracking.
 
 ## Features
 
